@@ -23,6 +23,10 @@ type Moto = {
   id: string
   model: string
   imageSrc: string | null
+  dealer: string | null
+  warranty: string | null
+  serviceCost: string | null
+  insurance: string | null
   cc: number | null
   power: number | null
   consumption: number | null
@@ -58,6 +62,138 @@ const imageByColumn: Record<number, string> = {
   19: 'image4.png',
   20: 'image13.png',
   21: 'image18.png',
+}
+
+const extraInfoByColumn: Record<
+  number,
+  Pick<Moto, 'dealer' | 'insurance' | 'serviceCost' | 'warranty'>
+> = {
+  1: {
+    dealer: 'TBA',
+    warranty: 'TBA',
+    serviceCost: null,
+    insurance: null,
+  },
+  2: {
+    dealer: 'Francisco da Cruz Nunes, 4764, Piratininga, Niterói',
+    warranty: '3 anos',
+    serviceCost: 'R$4.721,69',
+    insurance: 'R$1.109,21 (Tokio Marine)',
+  },
+  3: {
+    dealer: null,
+    warranty: '3 anos',
+    serviceCost: 'R$4.774,14',
+    insurance: 'R$1.391,82 (Tokio Marine)',
+  },
+  4: {
+    dealer: 'Barão de Mesquita, Loja 146, 148, Tijuca, Rio de Janeiro',
+    warranty: '3 anos',
+    serviceCost: 'R$2.305',
+    insurance: 'R$5.062,87 (Tokio Marine)',
+  },
+  5: {
+    dealer: 'Barão de Mesquita, Loja 146, 148, Tijuca, Rio de Janeiro',
+    warranty: '3 anos',
+    serviceCost: 'R$2.305',
+    insurance: 'R$3.064,22 (Completo)',
+  },
+  6: {
+    dealer: 'Alameda São Boaventura, 216, Fonseca, Niterói',
+    warranty: '3 anos',
+    serviceCost: 'R$1.530',
+    insurance: 'R$3.058,60 (Tokio Marine)',
+  },
+  7: {
+    dealer: 'Alameda São Boaventura, 216, Fonseca, Niterói',
+    warranty: '3 anos',
+    serviceCost: 'R$1.530',
+    insurance: null,
+  },
+  8: {
+    dealer: null,
+    warranty: '3 anos',
+    serviceCost: null,
+    insurance: null,
+  },
+  9: {
+    dealer: 'Alameda São Boaventura, 216, Fonseca, Niterói',
+    warranty: '3 anos',
+    serviceCost: 'R$2.588,90',
+    insurance: 'R$2.012 (Completo)',
+  },
+  10: {
+    dealer: null,
+    warranty: '3 anos',
+    serviceCost: 'R$2.588,90',
+    insurance: null,
+  },
+  11: {
+    dealer: null,
+    warranty: '3 anos',
+    serviceCost: null,
+    insurance: null,
+  },
+  12: {
+    dealer: null,
+    warranty: '3 anos',
+    serviceCost: 'R$4.508,83',
+    insurance: null,
+  },
+  13: {
+    dealer: 'R. Real Grandeza, 376, Botafogo, Rio de Janeiro',
+    warranty: '2 anos',
+    serviceCost: '-',
+    insurance: 'R$1.574,42 (Tokio Marine)',
+  },
+  14: {
+    dealer: 'Av. Infante Dom Henrique - Marina da Glória, Rio de Janeiro',
+    warranty: '2 anos',
+    serviceCost: 'R$2.500',
+    insurance: 'R$1.708,59 (Tokio Marine)',
+  },
+  15: {
+    dealer: 'Barão de Mesquita, Loja 146, 148, Tijuca, Rio de Janeiro',
+    warranty: '3 anos',
+    serviceCost: 'R$1.743',
+    insurance: 'R$2.508,69 (Tokio Marine)',
+  },
+  16: {
+    dealer: 'Barão de Mesquita, Loja 146, 148, Tijuca, Rio de Janeiro',
+    warranty: '3 anos',
+    serviceCost: 'R$1.743',
+    insurance: 'R$1.465,96 (Suhai Top)',
+  },
+  17: {
+    dealer: 'Alameda São Boaventura, 216, Fonseca, Niterói',
+    warranty: '3 anos',
+    serviceCost: 'R$2.588,90',
+    insurance: 'R$1.561,39 (Suhai Top)',
+  },
+  18: {
+    dealer: 'Alameda São Boaventura, 216, Fonseca, Niterói',
+    warranty: '3 anos',
+    serviceCost: 'R$1.530',
+    insurance: 'R$2.651,65 (Completo)',
+  },
+  19: {
+    dealer: 'Francisco da Cruz Nunes, Piratininga, Niterói',
+    warranty: '4 anos',
+    serviceCost: 'R$3.720',
+    insurance: 'R$2.115,11 (Completo)',
+  },
+  20: {
+    dealer: 'Francisco da Cruz Nunes, Piratininga, Niterói',
+    warranty: '4 anos',
+    serviceCost: 'R$3.720',
+    insurance: 'R$1.869 (Completo)',
+  },
+  21: {
+    dealer: null,
+    warranty: '3 anos',
+    serviceCost: null,
+    insurance: null,
+  },
 }
 
 const fieldMap = {
@@ -120,6 +256,17 @@ function toNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
+function textValue(cell: GoogleCell | undefined) {
+  const value = cell?.f ?? cell?.v
+  const text = value === null || value === undefined ? '' : String(value).trim()
+
+  return text && text !== '-' ? text : null
+}
+
+function mapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+}
+
 function extractMotos(table: GoogleTable): Moto[] {
   const labels = table.cols.map((column) => column.label.trim())
   const models = labels
@@ -128,11 +275,33 @@ function extractMotos(table: GoogleTable): Moto[] {
 
   return models.map(({ index, label }) => {
     const values: Partial<Record<keyof typeof fieldMap, number | null>> = {}
+    const fallbackExtra = extraInfoByColumn[index]
+    const extra: Pick<
+      Moto,
+      'dealer' | 'insurance' | 'serviceCost' | 'warranty'
+    > = {
+      dealer: fallbackExtra?.dealer ?? null,
+      warranty: fallbackExtra?.warranty ?? null,
+      serviceCost: fallbackExtra?.serviceCost ?? null,
+      insurance: fallbackExtra?.insurance ?? null,
+    }
 
     table.rows.forEach((row) => {
       const rowLabel = String(row.c?.[0]?.v ?? '').trim()
       if (rowLabel in fieldMap) {
         values[rowLabel as keyof typeof fieldMap] = toNumber(row.c?.[index]?.v)
+      }
+      if (rowLabel === 'Concessionária') {
+        extra.dealer = textValue(row.c?.[index]) ?? extra.dealer
+      }
+      if (rowLabel === 'Garantia') {
+        extra.warranty = textValue(row.c?.[index]) ?? extra.warranty
+      }
+      if (rowLabel === 'Preço total das revisões') {
+        extra.serviceCost = textValue(row.c?.[index]) ?? extra.serviceCost
+      }
+      if (rowLabel === 'Seguro (média)') {
+        extra.insurance = textValue(row.c?.[index]) ?? extra.insurance
       }
     })
 
@@ -149,6 +318,10 @@ function extractMotos(table: GoogleTable): Moto[] {
       imageSrc: imageByColumn[index]
         ? `/sheet-images/${imageByColumn[index]}`
         : null,
+      dealer: extra.dealer,
+      warranty: extra.warranty,
+      serviceCost: extra.serviceCost,
+      insurance: extra.insurance,
       cc: values['Cilindrada (cc)'] ?? null,
       power: values['Potência (cv)'] ?? null,
       consumption: values['Consumo (km/L) (média)'] ?? null,
@@ -214,8 +387,9 @@ function App() {
     const lightest = motos
       .filter((moto) => moto.weight)
       .toSorted((a, b) => (a.weight ?? 0) - (b.weight ?? 0))[0]
+    const withService = motos.filter((moto) => moto.serviceCost || moto.insurance)
 
-    return { bestValue, cheapest, lightest, strongest }
+    return { bestValue, cheapest, lightest, strongest, withService }
   }, [motos])
 
   const filteredMotos = useMemo(() => {
@@ -343,9 +517,9 @@ function App() {
               <small>{formatNumber(stats.strongest?.power ?? null, ' cv')}</small>
             </article>
             <article>
-              <span>Mais leve</span>
-              <strong>{stats.lightest?.model ?? 'Carregando'}</strong>
-              <small>{formatNumber(stats.lightest?.weight ?? null, ' kg')}</small>
+              <span>Custos extras</span>
+              <strong>{stats.withService.length || 'Carregando'}</strong>
+              <small>com revisão ou seguro</small>
             </article>
           </section>
 
@@ -407,6 +581,36 @@ function App() {
                           </div>
                         </dl>
 
+                        <details className="extra-details">
+                          <summary>Custos e concessionária</summary>
+                          <dl>
+                            <div>
+                              <dt>Garantia</dt>
+                              <dd>{item.warranty ?? 'Sem dado'}</dd>
+                            </div>
+                            <div>
+                              <dt>Revisões</dt>
+                              <dd>{item.serviceCost ?? 'Sem dado'}</dd>
+                            </div>
+                            <div>
+                              <dt>Seguro</dt>
+                              <dd>{item.insurance ?? 'Sem dado'}</dd>
+                            </div>
+                            <div>
+                              <dt>Concessionária</dt>
+                              <dd>
+                                {item.dealer && item.dealer !== 'TBA' ? (
+                                  <a href={mapsUrl(item.dealer)} target="_blank">
+                                    Abrir no Maps
+                                  </a>
+                                ) : (
+                                  item.dealer ?? 'Sem dado'
+                                )}
+                              </dd>
+                            </div>
+                          </dl>
+                        </details>
+
                         {item.tags.length > 0 && (
                           <div className="tag-row">
                             {item.tags.map((tag) => (
@@ -466,6 +670,10 @@ function App() {
                     <th>km/L</th>
                     <th>Assento</th>
                     <th>Preço/cv</th>
+                    <th>Garantia</th>
+                    <th>Revisões</th>
+                    <th>Seguro</th>
+                    <th>Concessionária</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -479,6 +687,18 @@ function App() {
                       <td>{formatNumber(moto.consumption)}</td>
                       <td>{formatNumber(moto.seat, ' mm')}</td>
                       <td>{formatMoney(moto.pricePower)}</td>
+                      <td>{moto.warranty ?? 'Sem dado'}</td>
+                      <td>{moto.serviceCost ?? 'Sem dado'}</td>
+                      <td>{moto.insurance ?? 'Sem dado'}</td>
+                      <td>
+                        {moto.dealer && moto.dealer !== 'TBA' ? (
+                          <a className="table-link" href={mapsUrl(moto.dealer)} target="_blank">
+                            Ver no Maps
+                          </a>
+                        ) : (
+                          moto.dealer ?? 'Sem dado'
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

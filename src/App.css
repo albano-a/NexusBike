@@ -395,6 +395,64 @@ input[type='range'] {
   font-weight: 850;
 }
 
+.extra-details {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--subtle);
+}
+
+.extra-details summary {
+  cursor: pointer;
+  padding: 11px 12px;
+  color: var(--text-h);
+  font-size: 0.84rem;
+  font-weight: 850;
+  list-style-position: inside;
+}
+
+.extra-details dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 12px 12px;
+}
+
+.extra-details dl div {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.7fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.extra-details dt {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+.extra-details dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--text-h);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.extra-details a,
+.table-link {
+  color: var(--accent);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.extra-details a:hover,
+.table-link:hover {
+  text-decoration: underline;
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -464,7 +522,7 @@ input[type='range'] {
 
 table {
   width: 100%;
-  min-width: 860px;
+  min-width: 1180px;
   border-collapse: collapse;
   text-align: left;
 }
